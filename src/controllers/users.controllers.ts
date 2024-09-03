@@ -1,10 +1,28 @@
-import { Request, Response } from 'express'
+import { NextFunction, Request, Response } from 'express'
+import { validationResult } from 'express-validator'
 import User from '~/models/schemas/User.schema'
 import databaseService from '~/services/database.services'
 import userService from '~/services/users.services'
+import { ParamsDictionary } from 'express-serve-static-core'
+import { RegisterReqBody } from '~/models/requests/User.requests'
 
-const loginController = (req: Request, res: Response) => {
-  console.log('req.body', req.body)
+const getUserController = async (req: Request, res: Response) => {
+  const { page, limit } = req.query
+  const pageNumber = parseInt(page as string)
+  const limitUser = parseInt(limit as string)
+
+  try {
+    const listUser = await userService.getAllUsers(pageNumber, limitUser)
+    res.status(200).json(listUser)
+  } catch (error) {
+    console.log(error)
+    return res.status(500).json({
+      message: 'Something Went Wrong'
+    })
+  }
+}
+
+const loginController = (req: Request, res: Response, next: NextFunction) => {
   const { email, password } = req.body
   if (email === 'hieu' && password === '123') {
     return res.status(200).json({
@@ -16,20 +34,23 @@ const loginController = (req: Request, res: Response) => {
   })
 }
 
-const registerController = async (req: Request, res: Response) => {
-  const { email, password } = req.body
-  try {
-    const result = await userService.register({ email, password })
-    return res.status(201).json({
-      message: 'Register Success',
-      result
-    })
-  } catch (error) {
-    console.log(error)
-    return res.status(400).json({
-      message: error
-    })
+const registerController = async (
+  req: Request<ParamsDictionary, any, RegisterReqBody>,
+  res: Response,
+  next: NextFunction
+) => {
+  const errors = validationResult(req)
+  console.log(errors)
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() })
   }
+
+  const result = await userService.register(req.body)
+
+  return res.status(201).json({
+    message: 'Register Success',
+    result
+  })
 }
 
-export { loginController, registerController }
+export { loginController, registerController, getUserController }

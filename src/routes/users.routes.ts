@@ -1,16 +1,25 @@
 import express from 'express'
-import { loginController, registerController } from '~/controllers/users.controllers'
+import { query } from 'express-validator'
+import { loginController, registerController, getUserController } from '~/controllers/users.controllers'
+
+import { wrapRequestHandler } from '~/utils/requestHandler'
 
 const usersRouter = express.Router()
-import { loginValidator } from '~/middlewares/users.middleware'
+import { getAllUserPagiValidator, loginValidator, registerValidator } from '~/middlewares/users.middleware'
 //middleware
 // usersRouter.use('/', loginValidator)
-usersRouter.get('/user', (req, res) => {
-  res.send('this is user routes')
-})
+
+usersRouter.get('/users', getAllUserPagiValidator, getUserController)
 
 usersRouter.post('/login', loginValidator, loginController)
 
-usersRouter.post('/register', registerController)
+/**
+ * Description: Register a new User
+ * Path: /register
+ * Method: POST
+ * Body: {name: string, email: string, password: string,
+ * confirm_password: string, date_of_birth: ISO8601 }
+ */
+usersRouter.post('/register', registerValidator, wrapRequestHandler(registerController))
 
 export default usersRouter
